@@ -1,4 +1,3 @@
-````markdown
 # Alimentos Tropicales Argentinos | ALTA SA
 
 <p align="center">
