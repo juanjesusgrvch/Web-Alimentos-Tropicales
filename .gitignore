@@ -20,6 +20,11 @@
 # production
 /build
 
+# firebase
+.firebase/
+firebase-debug.log*
+firebase-debug.log
+
 # misc
 .DS_Store
 *.pem
@@ -32,6 +37,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+.env.*.local
+.env.local
 
 # vercel
 .vercel
