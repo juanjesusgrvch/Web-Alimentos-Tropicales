@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+````markdown
+# Alimentos Tropicales Argentinos | ALTA SA
 
-## Getting Started
+<p align="center">
+  <img src="public/images/logoalta.svg" alt="ALTA SA Logo" width="200"/>
+</p>
 
-First, run the development server:
+## 📋 Descripción del Proyecto
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Esta es la plataforma web oficial de **Alimentos Tropicales Argentinos (ALTA SA)**, dedicada al procesamiento y exportación de oleaginosas y legumbres con los más altos estándares de calidad e inocuidad. La web permite a los usuarios conocer el catálogo de productos, los procesos de calidad y realizar solicitudes formales de carga y descarga de manera segura.
+
+---
+
+## 🚀 Tecnologías Utilizadas
+
+- **Frontend:** Next.js 15 (React 18), TypeScript.
+- **Estilos:** Tailwind CSS para un diseño responsivo y moderno.
+- **Backend/Base de Datos:** Firebase (Firestore para registros y Storage para documentos PDF).
+- **Seguridad:** Cloudflare Turnstile para protección contra bots y ataques.
+- **Generación de Documentos:** `html2pdf.js` para la creación dinámica de órdenes de carga en formato PDF.
+- **Iconografía:** Lucide React.
+
+---
+
+## 🛠️ Instalación y Ejecución Local
+
+Sigue estos pasos para poner en marcha el proyecto en tu entorno local:
+
+1. **Clonar el repositorio:**
+   ```bash
+   git clone [URL-DEL-REPOSITORIO]
+   cd alta-sa-landing
+   ```
+````
+
+2. **Instalar dependencias:**
+
+   ```bash
+   npm install
+   ```
+
+3. **Configurar variables de entorno:**
+   Crea un archivo `.env.local` en la raíz del proyecto y añade tus credenciales (puedes basarte en `.env.example` si existe):
+
+   ```env
+   # Cloudflare Turnstile
+   NEXT_PUBLIC_TURNSTILE_SITE_KEY=tu_site_key_aqui
+   TURNSTILE_SECRET_KEY=tu_secret_key_aqui
+
+   # Firebase Configuration
+   NEXT_PUBLIC_FIREBASE_API_KEY=...
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+   # ... resto de la config de Firebase
+   ```
+
+4. **Ejecutar el servidor de desarrollo:**
+   ```bash
+   npm run dev
+   ```
+   La aplicación estará disponible en `http://localhost:3000`.
+
+---
+
+## ⚠️ Requisitos Críticos de Seguridad (Cloudflare)
+
+**¡IMPORTANTE!** Para garantizar la integridad del sistema, este proyecto implementa **Cloudflare Turnstile**.
+
+Si no se vincula una clave válida de Cloudflare en las variables de entorno:
+
+- **Secciones de Solicitudes:** Los botones de "Solicitar Carga" y "Solicitar Descarga" no podrán completar la verificación.
+- **Envío de Emails:** El endpoint `/api/enviar-email` rechazará las peticiones al no poder validar el token de seguridad.
+- **Base de Datos:** No se registrarán nuevas órdenes en Firestore ni se subirán archivos al Storage, ya que la validación de seguridad es el primer paso de cada transacción.
+
+Asegúrate de que el dominio (incluyendo `localhost` para desarrollo) esté autorizado en tu panel de Cloudflare.
+
+---
+
+## 📂 Estructura del Proyecto
+
+- `/app`: Rutas de la aplicación y endpoints de la API.
+- `/components`: Componentes de UI (Radix/Shadcn) y secciones de la landing.
+- `/lib`: Configuración de Firebase y utilidades.
+- `/public`: Activos estáticos, imágenes de productos y el logo de la empresa.
+
+---
+
+## ✉️ Contacto
+
+**ALTA SA** - Embarcación, Salta, Argentina.
+[site](https://alimentostropicales.com)
+
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
