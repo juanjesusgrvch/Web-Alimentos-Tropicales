@@ -1,9 +1,8 @@
-# Alimentos Tropicales Argentinos | ALTA SA
-
 <p align="center">
   <img src="public/images/logoalta.svg" alt="ALTA SA Logo" width="200"/>
 </p>
 
+# Alimentos Tropicales Argentinos | ALTA SA
 ## 📋 Descripción del Proyecto
 
 Esta es la plataforma web oficial de **Alimentos Tropicales Argentinos (ALTA SA)**, dedicada al procesamiento y exportación de oleaginosas y legumbres con los más altos estándares de calidad e inocuidad. La web permite a los usuarios conocer el catálogo de productos, los procesos de calidad y realizar solicitudes formales de carga y descarga de manera segura.
@@ -30,7 +29,6 @@ Sigue estos pasos para poner en marcha el proyecto en tu entorno local:
    git clone [URL-DEL-REPOSITORIO]
    cd alta-sa-landing
    ```
-````
 
 2. **Instalar dependencias:**
 
@@ -87,8 +85,5 @@ Asegúrate de que el dominio (incluyendo `localhost` para desarrollo) esté auto
 ## ✉️ Contacto
 
 **ALTA SA** - Embarcación, Salta, Argentina.
-[site](https://alimentostropicales.com)
+[WEB LINK](https://alimentostropicales.com)
 
-```
-
-```
