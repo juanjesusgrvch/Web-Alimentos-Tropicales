@@ -20,13 +20,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <head>
-        {/* 🚀 CSP INYECTADO DIRECTAMENTE EN EL HTML (Actualizado para el celular) */}
-        <meta
-          httpEquiv="Content-Security-Policy"
-          content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://apis.google.com https://www.gstatic.com https://*.firebaseapp.com https://cdnjs.cloudflare.com https://www.google.com https://www.gstatic.com; frame-src 'self' https://challenges.cloudflare.com https://*.firebaseapp.com https://www.google.com; worker-src 'self' blob:; connect-src 'self' https://challenges.cloudflare.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com;"
-        />
-      </head>
       <body
         className={cn(
           "min-h-screen font-sans antialiased relative",

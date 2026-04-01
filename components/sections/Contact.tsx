@@ -18,6 +18,9 @@ import { Turnstile, TurnstileInstance } from "@marsidev/react-turnstile";
 export function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const turnstileSiteKey =
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
+    "0x4AAAAAACyJhxAdaIE03gSM";
 
   // 2. ESTADOS PARA EL TOKEN DE SEGURIDAD
   const [turnstileToken, setTurnstileToken] = useState<string>("");
@@ -127,14 +130,15 @@ export function Contact() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label
-                      htmlFor="name"
+                      htmlFor="contact-name"
                       className="text-sm font-medium leading-none"
                     >
                       Nombre Completo
                     </label>
                     <Input
-                      id="name"
+                      id="contact-name"
                       name="name"
+                      autoComplete="name"
                       placeholder="Ej: Juan Pérez"
                       required
                       className="bg-white/80"
@@ -142,14 +146,15 @@ export function Contact() {
                   </div>
                   <div className="space-y-2">
                     <label
-                      htmlFor="company"
+                      htmlFor="contact-company"
                       className="text-sm font-medium leading-none"
                     >
                       Empresa
                     </label>
                     <Input
-                      id="company"
+                      id="contact-company"
                       name="company"
+                      autoComplete="organization"
                       placeholder="Ej: Agro S.A."
                       required
                       className="bg-white/80"
@@ -159,15 +164,16 @@ export function Contact() {
 
                 <div className="space-y-2">
                   <label
-                    htmlFor="email"
+                    htmlFor="contact-email"
                     className="text-sm font-medium leading-none"
                   >
                     Correo Electrónico
                   </label>
                   <Input
-                    id="email"
+                    id="contact-email"
                     name="email"
                     type="email"
+                    autoComplete="email"
                     placeholder="juan@ejemplo.com"
                     required
                     className="bg-white/80"
@@ -176,14 +182,15 @@ export function Contact() {
 
                 <div className="space-y-2">
                   <label
-                    htmlFor="message"
+                    htmlFor="contact-message"
                     className="text-sm font-medium leading-none"
                   >
                     Mensaje
                   </label>
                   <Textarea
-                    id="message"
+                    id="contact-message"
                     name="message"
+                    autoComplete="off"
                     placeholder="Escriba su consulta aquí..."
                     className="min-h-[120px] bg-white/80 resize-none"
                     required
@@ -194,8 +201,10 @@ export function Contact() {
                 <div className="flex justify-center py-2">
                   <Turnstile
                     ref={turnstileRef}
-                    siteKey="0x4AAAAAACyJhxAdaIE03gSM" // TU CLAVE DE CLOUDFLARE
+                    siteKey={turnstileSiteKey}
                     onSuccess={(token) => setTurnstileToken(token)}
+                    onExpire={() => setTurnstileToken("")}
+                    onError={() => setTurnstileToken("")}
                     options={{
                       theme: "light",
                     }}

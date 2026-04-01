@@ -58,7 +58,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     <main className="min-h-screen pt-40 pb-12 bg-[#fafafa]">
       <div className="container mx-auto px-4 md:px-8 max-w-6xl">
 
-        <Link href="/#Productos" className="inline-flex items-center text-sm font-bold text-slate-500 hover:text-[#3a5a40] transition-colors mb-6">
+        <Link href="/#productos" className="inline-flex items-center text-sm font-bold text-slate-500 hover:text-[#3a5a40] transition-colors mb-6">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Volver a Productos
         </Link>

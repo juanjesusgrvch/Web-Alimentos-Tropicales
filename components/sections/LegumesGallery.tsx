@@ -37,7 +37,7 @@ function ProductCard({ item }: { item: typeof productsData[0] }) {
 export function LegumesGallery() {
   return (
     <section 
-      id="Productos" 
+      id="productos" 
       className="py-16 md:py-24 w-full bg-[#fdfdfd] bg-[linear-gradient(0deg,#F0FDFB_0%,#E3FFFB_20%,#E8FFCF_50%,#FDF6CD_100%)] overflow-hidden"
     >
       <div className="container px-4 md:px-6 mx-auto">

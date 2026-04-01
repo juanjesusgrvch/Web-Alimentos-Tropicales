@@ -77,6 +77,54 @@ interface OrdenLogistica {
   camiones?: any[];
   observaciones?: string;
   pdfUrl?: string;
+  timestamp_sistema?: {
+    seconds?: number;
+    nanoseconds?: number;
+    toDate?: () => Date;
+  } | null;
+}
+
+function parseCalendarDate(value?: string) {
+  if (!value) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+    const [day, month, year] = value.split("/").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getOrdenSortTime(orden: OrdenLogistica) {
+  if (orden.timestamp_sistema?.toDate) {
+    return orden.timestamp_sistema.toDate().getTime();
+  }
+
+  if (typeof orden.timestamp_sistema?.seconds === "number") {
+    return orden.timestamp_sistema.seconds * 1000;
+  }
+
+  return (
+    parseCalendarDate(orden.fecha_carga)?.getTime() ??
+    parseCalendarDate(orden.fecha_emision)?.getTime() ??
+    (parseInt(orden.id_orden) || 0)
+  );
+}
+
+function formatFechaCarga(value?: string) {
+  const parsed = parseCalendarDate(value);
+
+  if (!parsed) {
+    return "No informada";
+  }
+
+  return parsed.toLocaleDateString("es-AR");
 }
 
 export default function AdminPage() {
@@ -129,11 +177,7 @@ export default function AdminPage() {
         const fetchedOrdenes = ordenesSnap.docs.map(
           (doc) => ({ ...doc.data(), idDoc: doc.id }) as OrdenLogistica,
         );
-        fetchedOrdenes.sort((a, b) => {
-          const idA = parseInt(a.id_orden) || 0;
-          const idB = parseInt(b.id_orden) || 0;
-          return idB - idA;
-        });
+        fetchedOrdenes.sort((a, b) => getOrdenSortTime(b) - getOrdenSortTime(a));
         setOrdenes(fetchedOrdenes);
       } catch (error) {
         console.error("Error cargando datos:", error);
@@ -316,21 +360,50 @@ export default function AdminPage() {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
+                <label
+                  htmlFor="admin-email"
+                  className="text-sm font-medium leading-none"
+                >
+                  Correo electrÃ³nico
+                </label>
                 <Input
+                  id="admin-email"
+                  name="email"
                   type="email"
                   placeholder="Correo Electrónico"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="username"
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={error ? "admin-login-error" : undefined}
                   required
                 />
+                <label
+                  htmlFor="admin-password"
+                  className="text-sm font-medium leading-none"
+                >
+                  Contrasena
+                </label>
                 <Input
+                  id="admin-password"
+                  name="password"
                   type="password"
                   placeholder="Contraseña"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={error ? "admin-login-error" : undefined}
                   required
                 />
-                {error && <p className="text-sm text-destructive">{error}</p>}
+                {error && (
+                  <p
+                    id="admin-login-error"
+                    className="text-sm text-destructive"
+                  >
+                    {error}
+                  </p>
+                )}
               </div>
               <Button type="submit" className="w-full">
                 Ingresar
@@ -383,7 +456,7 @@ export default function AdminPage() {
         {activeTab === "logistica" &&
           (() => {
             // Sistema de Filtros y Ordenamiento Dinámico
-            let filteredOrdenes = ordenes;
+            let filteredOrdenes = [...ordenes];
 
             if (selectedMonth) {
               const [year, month] = selectedMonth.split("-");
@@ -395,9 +468,9 @@ export default function AdminPage() {
             }
 
             filteredOrdenes.sort((a, b) => {
-              const idA = parseInt(a.id_orden) || 0;
-              const idB = parseInt(b.id_orden) || 0;
-              return sortOrder === "desc" ? idB - idA : idA - idB;
+              const timeA = getOrdenSortTime(a);
+              const timeB = getOrdenSortTime(b);
+              return sortOrder === "desc" ? timeB - timeA : timeA - timeB;
             });
 
             return (
@@ -416,9 +489,12 @@ export default function AdminPage() {
                   <div className="flex gap-2 items-center">
                     <Input
                       type="month"
+                      id="logistica-month-filter"
+                      name="selectedMonth"
                       value={selectedMonth}
                       onChange={(e) => setSelectedMonth(e.target.value)}
                       className="w-auto h-9"
+                      aria-label="Filtrar ordenes por mes"
                       title="Filtrar por mes"
                     />
                     {selectedMonth && (
@@ -436,12 +512,14 @@ export default function AdminPage() {
                       size="sm"
                       className="h-9"
                       onClick={() =>
-                        setSortOrder(sortOrder === "desc" ? "asc" : "desc")
+                        setSortOrder((prev) =>
+                          prev === "asc" ? "desc" : "asc",
+                        )
                       }
                     >
                       {sortOrder === "desc"
-                        ? "▼ Más recientes"
-                        : "▲ Más antiguas"}
+                        ? "Mostrando: Más Recientes"
+                        : "Mostrando: Más Antiguas"}
                     </Button>
                   </div>
                 </div>
@@ -526,7 +604,7 @@ export default function AdminPage() {
                                 <span className="font-bold text-slate-700">
                                   Fecha de Carga:
                                 </span>{" "}
-                                {orden.fecha_carga}
+                                {formatFechaCarga(orden.fecha_carga)}
                               </p>
                             </div>
                             <div className="space-y-2">
@@ -680,36 +758,54 @@ export default function AdminPage() {
                   <form onSubmit={handleSave} className="grid gap-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">
+                        <label
+                          htmlFor="post-title"
+                          className="text-sm font-medium"
+                        >
                           Título Principal
                         </label>
                         <Input
+                          id="post-title"
+                          name="title"
                           value={newPost.title}
                           onChange={(e) =>
                             setNewPost({ ...newPost, title: e.target.value })
                           }
+                          autoComplete="off"
                           required
                           disabled={isUploading}
                         />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Categoría</label>
+                        <label htmlFor="post-category" className="sr-only">
+                          Categoria
+                        </label>
                         <Input
+                          id="post-category"
+                          name="category"
                           value={newPost.category}
                           onChange={(e) =>
                             setNewPost({ ...newPost, category: e.target.value })
                           }
+                          autoComplete="off"
                           required
                           disabled={isUploading}
                         />
                       </div>
                       <div className="space-y-2 md:col-span-2">
                         <label className="text-sm font-medium">Subtítulo</label>
+                        <label htmlFor="post-subtitle" className="sr-only">
+                          Subtitulo
+                        </label>
                         <Input
+                          id="post-subtitle"
+                          name="subtitle"
                           value={newPost.subtitle}
                           onChange={(e) =>
                             setNewPost({ ...newPost, subtitle: e.target.value })
                           }
+                          autoComplete="off"
                           placeholder="Un texto de apoyo debajo del título..."
                           disabled={isUploading}
                         />
@@ -717,11 +813,17 @@ export default function AdminPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">
+                        <label
+                          htmlFor="post-image-url"
+                          className="text-sm font-medium"
+                        >
                           Imagen Principal (Portada)
                         </label>
                         <div className="flex flex-col sm:flex-row gap-3">
                           <Input
+                            id="post-image-url"
+                            name="imageUrl"
+                            type="url"
                             placeholder="URL de la imagen..."
                             value={newPost.imageUrl}
                             onChange={(e) =>
@@ -730,15 +832,19 @@ export default function AdminPage() {
                                 imageUrl: e.target.value,
                               })
                             }
+                            autoComplete="off"
                             required
                             className="flex-1"
                             disabled={isUploading}
                           />
                           <div className="relative shrink-0 sm:w-28 h-10">
                             <Input
+                              id="post-image-upload"
+                              name="imageUpload"
                               type="file"
                               accept="image/*"
                               className="absolute inset-0 opacity-0 cursor-pointer w-full z-10"
+                              aria-label="Subir imagen principal"
                               onChange={(e) =>
                                 handleImageUpload(e, (url) =>
                                   setNewPost({ ...newPost, imageUrl: url }),
@@ -758,12 +864,20 @@ export default function AdminPage() {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Extracto</label>
+                        <label
+                          htmlFor="post-excerpt"
+                          className="text-sm font-medium"
+                        >
+                          Extracto
+                        </label>
                         <Textarea
+                          id="post-excerpt"
+                          name="excerpt"
                           value={newPost.excerpt}
                           onChange={(e) =>
                             setNewPost({ ...newPost, excerpt: e.target.value })
                           }
+                          autoComplete="off"
                           required
                           className="h-10"
                           disabled={isUploading}
@@ -771,7 +885,10 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <div className="border-t pt-6">
-                      <label className="text-sm font-bold text-primary mb-2 block">
+                      <label
+                        htmlFor="post-content"
+                        className="text-sm font-bold text-primary mb-2 block"
+                      >
                         Cuerpo de la Noticia (Markdown)
                       </label>
                       <div className="bg-muted/50 p-5 rounded-lg mb-4 space-y-4 border">
@@ -779,19 +896,32 @@ export default function AdminPage() {
                           Herramienta: Insertar imágenes en el texto
                         </p>
                         <div className="flex flex-col md:flex-row gap-3">
+                          <label
+                            htmlFor="post-inline-image-url"
+                            className="sr-only"
+                          >
+                            URL de imagen para insertar en el contenido
+                          </label>
                           <Input
+                            id="post-inline-image-url"
+                            name="inlineImageUrl"
+                            type="url"
                             placeholder="URL Imagen 1..."
                             value={extraImg1}
                             onChange={(e) => setExtraImg1(e.target.value)}
+                            autoComplete="off"
                             className="h-10 flex-1"
                             disabled={isUploading}
                           />
                           <div className="flex gap-2 shrink-0">
                             <div className="relative h-10 w-28">
                               <Input
+                                id="post-inline-image-upload"
+                                name="inlineImageUpload"
                                 type="file"
                                 accept="image/*"
                                 className="absolute inset-0 opacity-0 z-10"
+                                aria-label="Subir imagen para insertar en el contenido"
                                 onChange={(e) =>
                                   handleImageUpload(e, setExtraImg1)
                                 }
@@ -820,10 +950,13 @@ export default function AdminPage() {
                         </div>
                       </div>
                       <Textarea
+                        id="post-content"
+                        name="content"
                         value={newPost.content}
                         onChange={(e) =>
                           setNewPost({ ...newPost, content: e.target.value })
                         }
+                        autoComplete="off"
                         required
                         placeholder="Escribe aquí tu noticia..."
                         className="min-h-[400px] font-mono text-sm"
