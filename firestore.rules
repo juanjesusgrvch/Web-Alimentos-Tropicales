@@ -1,8 +1,57 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // --- FUNCIONES DE SEGURIDAD ---
+    
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Lee el rol directamente de la colección 'usuarios' que creamos manualmente
+    function getUserRole() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol;
+    }
+
+    function isAdmin() {
+      return signedIn() && getUserRole() == 'admin';
+    }
+
+    function isStaff() {
+      return signedIn() && (getUserRole() == 'admin' || getUserRole() == 'operador');
+    }
+
+    // --- REGLAS POR COLECCIÓN ---
+
+    // 1. BLOG (Noticias)
+    match /posts/{postId} {
+      // Cualquiera puede leer las noticias en la web
+      allow read: if true; 
+      // Solo tú (Admin) puedes crear, editar o borrar artículos
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 2. LOGÍSTICA (Órdenes de carga)
+    match /ordenes_logistica/{ordenId} {
+      // El formulario en la web es público: cualquier cliente puede enviar una orden
+      allow create: if true; 
+      
+      // SOLO el personal autorizado (Admin y Operadores) puede ver las órdenes, 
+      // editarlas para procesarlas o borrarlas.
+      allow read, update, delete: if isStaff();
+    }
+
+    // 3. COLECCIÓN DE USUARIOS (El motor de permisos)
+    match /usuarios/{userId} {
+      // Los usuarios pueden ver y editar sus propios datos básicos
+      allow read, update: if signedIn() && request.auth.uid == userId;
+      // Solo el Admin puede crear nuevos usuarios autorizados o eliminarlos
+      allow create, delete: if isAdmin();
+    }
+
+    // --- CIERRE TOTAL DE SEGURIDAD ---
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

@@ -63,6 +63,17 @@ interface BlogPost {
   content: string;
 }
 
+interface CamionLogistica {
+  trans_n?: string;
+  trans_c?: string;
+  chofer_n?: string;
+  chofer_c?: string;
+  chasis?: string;
+  acoplado?: string;
+  peso_envase?: string;
+  kilos_unidad?: number | string;
+}
+
 interface OrdenLogistica {
   idDoc: string;
   id_orden: string;
@@ -71,10 +82,17 @@ interface OrdenLogistica {
   producto: string;
   kilos_total: string;
   destino: string;
+  destino_c?: string;
   destinatario: string;
+  destinatario_c?: string;
   remitente: string;
+  remitente_c?: string;
+  pagador_n?: string;
+  pagador_c?: string;
+  inter_n?: string;
+  inter_c?: string;
   cantidad_camiones: number;
-  camiones?: any[];
+  camiones?: CamionLogistica[];
   observaciones?: string;
   pdfUrl?: string;
   timestamp_sistema?: {
@@ -127,6 +145,68 @@ function formatFechaCarga(value?: string) {
   return parsed.toLocaleDateString("es-AR");
 }
 
+function formatCuitCuil(value?: unknown) {
+  const normalized = value?.toString().trim();
+  return normalized ? normalized : "-";
+}
+
+function getFirstAvailableFieldValue(
+  source: Record<string, unknown>,
+  keys: string[],
+) {
+  for (const key of keys) {
+    const value = source[key];
+    if (value !== null && value !== undefined && `${value}`.trim() !== "") {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function findValueByKeyTokenGroups(
+  source: unknown,
+  tokenGroups: string[][],
+): unknown {
+  const stack: unknown[] = [source];
+  const visited = new Set<unknown>();
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+
+    if (!current || typeof current !== "object" || visited.has(current)) {
+      continue;
+    }
+
+    visited.add(current);
+
+    if (Array.isArray(current)) {
+      for (const item of current) {
+        stack.push(item);
+      }
+      continue;
+    }
+
+    for (const [rawKey, value] of Object.entries(
+      current as Record<string, unknown>,
+    )) {
+      const normalizedKey = rawKey.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const matches = tokenGroups.some((tokens) =>
+        tokens.every((token) => normalizedKey.includes(token)),
+      );
+
+      if (matches && value !== null && value !== undefined && `${value}`.trim() !== "") {
+        return value;
+      }
+
+      if (value && typeof value === "object") {
+        stack.push(value);
+      }
+    }
+  }
+
+  return undefined;
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -134,6 +214,7 @@ export default function AdminPage() {
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState<"noticias" | "logistica">(
     "logistica",
   );
@@ -177,7 +258,9 @@ export default function AdminPage() {
         const fetchedOrdenes = ordenesSnap.docs.map(
           (doc) => ({ ...doc.data(), idDoc: doc.id }) as OrdenLogistica,
         );
-        fetchedOrdenes.sort((a, b) => getOrdenSortTime(b) - getOrdenSortTime(a));
+        fetchedOrdenes.sort(
+          (a, b) => getOrdenSortTime(b) - getOrdenSortTime(a),
+        );
         setOrdenes(fetchedOrdenes);
       } catch (error) {
         console.error("Error cargando datos:", error);
@@ -364,13 +447,13 @@ export default function AdminPage() {
                   htmlFor="admin-email"
                   className="text-sm font-medium leading-none"
                 >
-                  Correo electrÃ³nico
+                  Correo electrónico
                 </label>
                 <Input
                   id="admin-email"
                   name="email"
                   type="email"
-                  placeholder="Correo Electrónico"
+                  placeholder="juanperez@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="username"
@@ -382,23 +465,37 @@ export default function AdminPage() {
                   htmlFor="admin-password"
                   className="text-sm font-medium leading-none"
                 >
-                  Contrasena
+                  Contraseña
                 </label>
                 <Input
                   id="admin-password"
                   name="password"
-                  type="password"
-                  placeholder="Contraseña"
+                    type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
-                  aria-invalid={Boolean(error)}
-                  aria-describedby={error ? "admin-login-error" : undefined}
-                  required
-                />
-                {error && (
-                  <p
-                    id="admin-login-error"
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={error ? "admin-login-error" : undefined}
+                    required
+                  />
+                  <div className="mt-1 text-right">
+                    <button
+                      type="button"
+                      className="text-sm text-green-600 hover:underline"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={
+                        showPassword
+                          ? "Ocultar contrasena"
+                          : "Mostrar contrasena"
+                      }
+                    >
+                      {showPassword ? "Ocultar" : "Mostrar"} contrasena
+                    </button>
+                  </div>
+                  {error && (
+                    <p
+                      id="admin-login-error"
                     className="text-sm text-destructive"
                   >
                     {error}
@@ -408,6 +505,14 @@ export default function AdminPage() {
               <Button type="submit" className="w-full">
                 Ingresar
               </Button>
+              <div className="text-center">
+                <a
+                  href="/recuperar-acceso"
+                  className="text-sm text-green-600 hover:underline"
+                >
+                  Olvide mi contrasena
+                </a>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -592,13 +697,45 @@ export default function AdminPage() {
                             <div className="space-y-2">
                               <p className="text-sm text-slate-500 flex items-center mt-1">
                                 <MapPin className="w-3 h-3 mr-1" /> Destino:{" "}
-                                {orden.destino}
+                                {orden.destino} |{" "}
+                                {formatCuitCuil(
+                                  getFirstAvailableFieldValue(
+                                    orden as unknown as Record<string, unknown>,
+                                    [
+                                      "destino_c",
+                                      "destino_cuit",
+                                      "cuit_destino",
+                                      "destinoCuit",
+                                      "cuitDestino",
+                                    ],
+                                  ) ??
+                                    findValueByKeyTokenGroups(orden, [
+                                      ["destino", "cuit"],
+                                      ["destino", "cuil"],
+                                    ]),
+                                )}
                               </p>
                               <p>
                                 <span className="font-bold text-slate-700">
                                   Destinatario:
                                 </span>{" "}
-                                {orden.destinatario}
+                                {orden.destinatario} |{" "}
+                                {formatCuitCuil(
+                                  getFirstAvailableFieldValue(
+                                    orden as unknown as Record<string, unknown>,
+                                    [
+                                      "destinatario_c",
+                                      "destinatario_cuit",
+                                      "cuit_destinatario",
+                                      "destinatarioCuit",
+                                      "cuitDestinatario",
+                                    ],
+                                  ) ??
+                                    findValueByKeyTokenGroups(orden, [
+                                      ["destinatario", "cuit"],
+                                      ["destinatario", "cuil"],
+                                    ]),
+                                )}
                               </p>
                               <p>
                                 <span className="font-bold text-slate-700">
@@ -625,6 +762,9 @@ export default function AdminPage() {
                               </h4>
                               <div className="grid grid-cols-1 gap-3">
                                 {orden.camiones.map((camion, i) => {
+                                  const kilosUnidad = Number(
+                                    camion.kilos_unidad ?? 0,
+                                  );
                                   const pesoEnvaseMatch = camion.peso_envase
                                     ? camion.peso_envase.match(/\d+/)
                                     : null;
@@ -635,9 +775,7 @@ export default function AdminPage() {
 
                                   const cantidadBolsas =
                                     pesoNumerico > 0
-                                      ? Math.round(
-                                          camion.kilos_unidad / pesoNumerico,
-                                        )
+                                      ? Math.round(kilosUnidad / pesoNumerico)
                                       : 0;
 
                                   return (
@@ -651,8 +789,12 @@ export default function AdminPage() {
                                           kg
                                         </p>
                                         <p className="text-slate-600">
-                                          Chofer: {camion.chofer_n} | Transp:{" "}
-                                          {camion.trans_n}
+                                          Chofer: {camion.chofer_n} |{" "}
+                                          {formatCuitCuil(camion.chofer_c)}
+                                        </p>
+                                        <p className="text-slate-600">
+                                          Transp: {camion.trans_n} |{" "}
+                                          {formatCuitCuil(camion.trans_c)}
                                         </p>
                                       </div>
                                       <div className="md:text-right mt-2 md:mt-0">
